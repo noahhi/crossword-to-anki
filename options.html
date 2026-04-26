@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Crossword to Anki — Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>Crossword to Anki</h1>
+      <p class="lead">
+        Pick where new cards go. The extension talks to Anki via the AnkiConnect
+        add-on, so Anki needs to be running when you save a card.
+      </p>
+
+      <section id="status-row">
+        <div id="anki-status">Checking AnkiConnect…</div>
+        <button id="refresh">Refresh</button>
+      </section>
+
+      <section id="setup" hidden>
+        <label>Deck
+          <select id="deck"></select>
+        </label>
+
+        <label>Note type
+          <select id="model"></select>
+        </label>
+
+        <fieldset id="field-mapping" disabled>
+          <legend>Field mapping</legend>
+          <p class="hint">
+            Tell the extension which field on the note type holds the clue,
+            the answer, and any optional extras.
+          </p>
+
+          <label>Clue field
+            <select id="clueField"></select>
+          </label>
+          <label>Answer field
+            <select id="answerField"></select>
+          </label>
+          <label>Notes field <span class="opt">(optional)</span>
+            <select id="notesField"></select>
+          </label>
+          <label>Source field <span class="opt">(optional)</span>
+            <select id="sourceField"></select>
+          </label>
+          <label>Date field <span class="opt">(optional)</span>
+            <select id="dateField"></select>
+          </label>
+        </fieldset>
+
+        <label>Extra tags <span class="opt">(optional, space- or comma-separated)</span>
+          <input type="text" id="extraTags" placeholder="e.g. vocabulary trivia" />
+        </label>
+
+        <div class="actions">
+          <button id="save" class="primary">Save settings</button>
+          <span id="save-status"></span>
+        </div>
+      </section>
+
+      <section class="help">
+        <h2>Setup checklist</h2>
+        <ol>
+          <li>Install the <a href="https://ankiweb.net/shared/info/2055492159" target="_blank" rel="noopener">AnkiConnect</a> add-on in Anki.</li>
+          <li>In Anki: Tools → Add-ons → AnkiConnect → Config. Add this extension's ID to <code>webCorsOriginList</code>:
+            <pre id="origin-line">chrome-extension://YOUR_EXTENSION_ID</pre>
+          </li>
+          <li>Restart Anki, then click <em>Refresh</em> above.</li>
+          <li>Pick your deck and note type, map the fields, save.</li>
+          <li>While solving on nytimes.com, press <kbd>Ctrl/Cmd</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> to capture the active clue.</li>
+        </ol>
+      </section>
+    </main>
+    <script type="module" src="options.js"></script>
+  </body>
+</html>

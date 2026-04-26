@@ -1,0 +1,40 @@
+body {
+  margin: 0;
+  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  width: 280px;
+}
+.wrap {
+  padding: 14px 16px 16px;
+}
+h1 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.ctx {
+  color: #555;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+button {
+  width: 100%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f8f8f8;
+  cursor: pointer;
+  font: inherit;
+  margin-bottom: 6px;
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+button.link {
+  background: transparent;
+  border: none;
+  color: #2b6cb0;
+  text-align: left;
+  padding: 4px 0;
+  margin-top: 4px;
+}
