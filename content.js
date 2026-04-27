@@ -1,23 +1,32 @@
-// Content script injected into NYT crossword pages.
+// Content script injected into NYT and New Yorker crossword pages.
 //
 // Two responsibilities:
 //   1) Read the currently-active clue and the letters of its answer from the DOM.
 //   2) Show a small overlay form that lets the user edit and confirm before
 //      sending to AnkiConnect (via the popup/options storage settings).
 //
-// NYT renders the crossword as SVG with <text> nodes for letters. The clue
-// list is HTML. We use class-name heuristics with fallbacks because NYT
-// occasionally tweaks markup.
+// NYT renders the crossword as SVG with <text> nodes for letters. The New
+// Yorker uses a similar player. We use class-name heuristics with fallbacks
+// because either site may tweak markup.
 
 (function () {
+  // -------- Source detection ------------------------------------------------
+
+  function detectSource() {
+    return window.location.hostname.includes("newyorker.com") ? "newyorker" : "nyt";
+  }
+
   // -------- DOM scraping ----------------------------------------------------
 
   function getActiveClueElement() {
-    // Primary: the clue list highlights the active clue with a class
-    // containing "Clue-active". Fall back to aria-selected.
+    // NYT: highlighted clue class. New Yorker uses similar patterns.
+    // Try both sets of selectors so the same code covers both sites.
     return (
       document.querySelector('[class*="xwd__clue--selected"]') ||
       document.querySelector('[class*="Clue-active"]') ||
+      document.querySelector('[class*="Clue--selected"]') ||
+      document.querySelector('[class*="clue--selected"]') ||
+      document.querySelector('[class*="clue--active"]') ||
       document.querySelector('li[aria-selected="true"]') ||
       null
     );
@@ -38,9 +47,13 @@
     const el = getActiveClueElement();
     if (!el) return null;
     // The list the clue belongs to has a heading "Across" or "Down" nearby.
-    const list = el.closest('[class*="ClueList"]') || el.closest("section");
+    const list =
+      el.closest('[class*="ClueList"]') ||
+      el.closest('[class*="clue-list"]') ||
+      el.closest("section") ||
+      el.closest("ul");
     if (!list) return null;
-    const heading = list.querySelector("h3, h2, [class*='Header']");
+    const heading = list.querySelector("h3, h2, [class*='Header'], [class*='header']");
     if (!heading) return null;
     const t = heading.innerText.toLowerCase();
     if (t.includes("across")) return "across";
@@ -49,12 +62,11 @@
   }
 
   function getActiveAnswerLetters() {
-    // The grid uses <g> groups per cell with classes like "xwd__cell"
-    // and the active word's cells get a "xwd__cell--highlighted" or similar
-    // class. The currently focused cell typically has "xwd__cell--selected".
-    // We collect all highlighted cells in DOM order and read their <text>.
+    // The grid uses <g> groups per cell. The active word's cells get a
+    // "highlighted" class. We collect all highlighted cells in DOM order
+    // and read their <text>. Both NYT and New Yorker use similar SVG patterns.
     const highlighted = document.querySelectorAll(
-      '[class*="xwd__cell--highlighted"], [class*="cell--highlighted"]'
+      '[class*="xwd__cell--highlighted"], [class*="cell--highlighted"], [class*="Cell--highlighted"], [class*="Cell-highlighted"]'
     );
     if (!highlighted.length) return null;
 
@@ -78,28 +90,53 @@
     return letters.join("").toUpperCase();
   }
 
-  function getPuzzleDate() {
-    // NYT puts the puzzle date in the page title and in a header element.
-    const title = document.title; // e.g. "NYT Crossword: Saturday, April 25, 2026"
-    const m = title.match(
+  function parseDateString(str) {
+    const m = str.match(
       /(Sun|Mon|Tues|Wednes|Thurs|Fri|Satur)day,\s+([A-Za-z]+)\s+(\d{1,2}),\s+(\d{4})/
     );
     if (!m) return null;
     const [, dayPrefix, month, day, year] = m;
     const dayMap = {
-      Sun: "Sunday",
-      Mon: "Monday",
-      Tues: "Tuesday",
-      Wednes: "Wednesday",
-      Thurs: "Thursday",
-      Fri: "Friday",
-      Satur: "Saturday",
+      Sun: "Sunday", Mon: "Monday", Tues: "Tuesday", Wednes: "Wednesday",
+      Thurs: "Thursday", Fri: "Friday", Satur: "Saturday",
     };
     return {
       iso: new Date(`${month} ${day}, ${year}`).toISOString().slice(0, 10),
       weekday: dayMap[dayPrefix] || null,
       pretty: `${dayMap[dayPrefix]}, ${month} ${day}, ${year}`,
     };
+  }
+
+  function getPuzzleDate() {
+    // Try the page title first — NYT includes the date there.
+    const fromTitle = parseDateString(document.title);
+    if (fromTitle) return fromTitle;
+
+    // New Yorker: date may appear in the URL as /crossword/YYYY/MM/DD
+    const urlMatch = window.location.pathname.match(/\/(\d{4})\/(\d{2})\/(\d{2})/);
+    if (urlMatch) {
+      const [, year, month, day] = urlMatch;
+      const d = new Date(`${year}-${month}-${day}T12:00:00`);
+      const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][d.getDay()];
+      const monthName = d.toLocaleString("en-US", { month: "long" });
+      return {
+        iso: `${year}-${month}-${day}`,
+        weekday,
+        pretty: `${weekday}, ${monthName} ${parseInt(day, 10)}, ${year}`,
+      };
+    }
+
+    // New Yorker: date may appear in a byline or header element on the page.
+    const bylineEl = document.querySelector(
+      '[class*="byline"], [class*="Byline"], [class*="pub-date"], time[datetime]'
+    );
+    if (bylineEl) {
+      const dt = bylineEl.getAttribute("datetime") || bylineEl.textContent || "";
+      const fromEl = parseDateString(dt);
+      if (fromEl) return fromEl;
+    }
+
+    return null;
   }
 
   function getActiveAnswerLength() {
@@ -115,7 +152,8 @@
     const answerLength = getActiveAnswerLength();
     const direction = getActiveDirection();
     const date = getPuzzleDate();
-    return { clue, answer, answerLength, direction, date };
+    const source = detectSource();
+    return { clue, answer, answerLength, direction, date, source };
   }
 
   // -------- Overlay UI ------------------------------------------------------
@@ -142,6 +180,7 @@
         <label>Notes (optional)
           <textarea class="cwa-notes" rows="2" placeholder="Definition, mnemonic, why it tripped you up…"></textarea>
         </label>
+        <div class="cwa-history"></div>
         <div class="cwa-meta"></div>
         <div class="cwa-status"></div>
         <div class="cwa-actions">
@@ -165,6 +204,15 @@
     if (captured.date) metaBits.push(captured.date.pretty);
     overlay.querySelector(".cwa-meta").textContent = metaBits.join(" · ");
 
+    if (captured.answer) {
+      const historyEl = overlay.querySelector(".cwa-history");
+      historyEl.innerHTML = '<div class="cwa-history-loading">Loading history…</div>';
+      chrome.runtime.sendMessage(
+        { type: "FETCH_WORD_HISTORY", word: captured.answer },
+        (resp) => renderHistory(historyEl, resp)
+      );
+    }
+
     overlay.querySelector(".cwa-close").addEventListener("click", closeOverlay);
     overlay.querySelector(".cwa-cancel").addEventListener("click", closeOverlay);
     overlay.querySelector(".cwa-save").addEventListener("click", () =>
@@ -182,6 +230,32 @@
       if (e.key === "Escape") closeOverlay();
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave(captured);
     });
+  }
+
+  function renderHistory(historyEl, resp) {
+    if (!historyEl) return;
+    if (!resp || !resp.ok || !resp.count) {
+      historyEl.innerHTML = "";
+      return;
+    }
+    const rows = (resp.recentClues || [])
+      .map(
+        (e) =>
+          `<tr><td class="cwa-history-date">${e.date}</td><td>${escapeHtml(e.clue)}</td></tr>`
+      )
+      .join("");
+    historyEl.innerHTML = `
+      <div class="cwa-history-count">Appeared ${resp.count} time${resp.count === 1 ? "" : "s"} in NYT crosswords</div>
+      ${rows ? `<table class="cwa-history-table"><thead><tr><th>Date</th><th>Clue</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
+    `;
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
   }
 
   function closeOverlay() {

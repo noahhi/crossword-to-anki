@@ -2,10 +2,12 @@
   "manifest_version": 3,
   "name": "Crossword to Anki",
   "version": "0.1.0",
-  "description": "Capture clue/answer pairs from NYT crosswords and send them to Anki via AnkiConnect.",
-  "permissions": ["storage", "activeTab", "scripting"],
+  "description": "Capture clue/answer pairs from NYT and New Yorker crosswords and send them to Anki via AnkiConnect.",
+  "permissions": ["storage", "activeTab", "scripting", "cookies"],
   "host_permissions": [
     "https://www.nytimes.com/*",
+    "https://www.newyorker.com/*",
+    "https://www.xwordinfo.com/*",
     "http://127.0.0.1:8765/*"
   ],
   "background": {
@@ -17,6 +19,14 @@
       "matches": [
         "https://www.nytimes.com/crosswords/*",
         "https://www.nytimes.com/games/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.newyorker.com/puzzles-and-games-dept/crossword*"
       ],
       "js": ["content.js"],
       "css": ["content.css"],

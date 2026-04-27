@@ -19,7 +19,10 @@ chrome.commands.onCommand.addListener(async (command) => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.id) return;
 
-  if (!/^https:\/\/www\.nytimes\.com\/(crosswords|games)\//.test(tab.url || "")) {
+  if (
+    !/^https:\/\/www\.nytimes\.com\/(crosswords|games)\//.test(tab.url || "") &&
+    !/^https:\/\/www\.newyorker\.com\/puzzles-and-games-dept\/crossword/.test(tab.url || "")
+  ) {
     return;
   }
 
@@ -38,7 +41,7 @@ chrome.runtime.onInstalled.addListener(({ reason }) => {
   }
 });
 
-// ---- save handler ----------------------------------------------------------
+// ---- message handler -------------------------------------------------------
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === "SAVE_CARD") {
@@ -47,7 +50,133 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch((err) => sendResponse({ ok: false, error: err.message }));
     return true; // keep channel open for async response
   }
+
+  if (msg && msg.type === "FETCH_WORD_HISTORY") {
+    fetchWordHistory(msg.word)
+      .then(sendResponse)
+      .catch(() => sendResponse({ ok: false }));
+    return true;
+  }
 });
+
+// ---- XWordInfo word history ------------------------------------------------
+//
+// XWordInfo's Finder is an ASP.NET WebForms page, not a JSON API. We must:
+//   1. GET /Finder to extract the per-session anti-CSRF tokens (__VIEWSTATE etc.)
+//   2. POST /Finder with those tokens + the word to get the results HTML.
+//   3. Parse the HTML response for the appearance count and recent clues.
+//
+// `credentials: "include"` sends the browser's xwordinfo.com session cookie
+// automatically (works because the extension has host_permissions for the site).
+
+async function fetchWordHistory(word) {
+  console.log("[CWA] fetchWordHistory start:", word);
+  try {
+    const getResp = await fetch("https://www.xwordinfo.com/Finder", {
+      credentials: "include",
+    });
+    console.log("[CWA] GET status:", getResp.status);
+    if (!getResp.ok) return { ok: false };
+    const getHtml = await getResp.text();
+
+    const viewState = extractInputValue(getHtml, "__VIEWSTATE");
+    const viewStateGen = extractInputValue(getHtml, "__VIEWSTATEGENERATOR");
+    const eventValidation = extractInputValue(getHtml, "__EVENTVALIDATION");
+    console.log("[CWA] viewState found:", !!viewState);
+    if (!viewState) return { ok: false };
+
+    const body = new URLSearchParams({
+      __EVENTTARGET: "",
+      __EVENTARGUMENT: "",
+      __VIEWSTATE: viewState,
+      __VIEWSTATEGENERATOR: viewStateGen,
+      __EVENTVALIDATION: eventValidation,
+      "ctl00$CPHContent$SortBy": "rbDate",
+      "ctl00$CPHContent$RetLen": "rbAllLen",
+      "ctl00$CPHContent$LenBox": "15",
+      "ctl00$CPHContent$ClueBy": "rbDate",
+      "ctl00$CPHContent$WordBox": word,
+      "ctl00$CPHContent$SearchBut": "Search",
+    });
+
+    const postResp = await fetch("https://www.xwordinfo.com/Finder", {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: body.toString(),
+    });
+    console.log("[CWA] POST status:", postResp.status);
+    if (!postResp.ok) return { ok: false };
+
+    return parseFinderHtml(await postResp.text());
+  } catch (err) {
+    console.log("[CWA] fetchWordHistory error:", err);
+    return { ok: false };
+  }
+}
+
+function extractInputValue(html, name) {
+  // Match <input ... name="NAME" ... value="VALUE" ...> in either attribute order.
+  const re1 = new RegExp(`name="${name}"[^>]*?value="([^"]*)"`, "i");
+  const re2 = new RegExp(`value="([^"]*)"[^>]*?name="${name}"`, "i");
+  const m = html.match(re1) || html.match(re2);
+  return m ? m[1] : null;
+}
+
+function parseFinderHtml(html) {
+  // DOMParser is not available in MV3 service workers — parse with regex.
+
+  // Count: match "87 total results for WORD"
+  let count = 0;
+  const countMatch =
+    html.match(/(\d+)\s+total\s+results?\s+for/i) ||
+    html.match(/appears?\s+(\d+)\s+times?/i) ||
+    html.match(/found\s+(\d+)/i);
+  if (countMatch) count = parseInt(countMatch[1], 10);
+
+  function cellText(inner) {
+    return inner
+      .replace(/<[^>]+>/g, "")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .trim();
+  }
+
+  // Results table columns: Date | Grid | Clue | Author | Editor
+  // Only rows with a data-date attribute are actual result rows.
+  const recentClues = [];
+  const trRe = /<tr[\s\S]*?<\/tr>/gi;
+  let trMatch;
+  while ((trMatch = trRe.exec(html)) !== null && recentClues.length < 6) {
+    const rowHtml = trMatch[0];
+    if (!rowHtml.includes("data-date=")) continue; // skip header/form rows
+
+    const cells = [];
+    const tdRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+    let tdMatch;
+    while ((tdMatch = tdRe.exec(rowHtml)) !== null) {
+      // Strip the (N) repeats count from clue cells before extracting text.
+      const cleaned = tdMatch[1].replace(/<span[^>]*class=['"]repeats['"][^>]*>[\s\S]*?<\/span>/g, "");
+      cells.push(cellText(cleaned));
+    }
+
+    // cells[0]=date, cells[1]=grid, cells[2]=clue
+    if (cells.length >= 3 && cells[0] && cells[2]) {
+      recentClues.push({ date: cells[0], clue: cells[2] });
+    }
+  }
+
+  console.log("[CWA] parseFinderHtml: count =", count, "| clues found =", recentClues.length);
+
+  if (!count && !recentClues.length) return { ok: false };
+  return { ok: true, count, recentClues };
+}
+
+// ---- settings / save -------------------------------------------------------
 
 async function getSettings() {
   const s = await chrome.storage.sync.get([
@@ -69,9 +198,10 @@ async function getSettings() {
 }
 
 function buildTags(payload, extraTags) {
-  const tags = ["crossword", "nyt"];
+  const source = payload.source || "nyt";
+  const tags = ["crossword", source];
   if (payload.date && payload.date.weekday) {
-    tags.push(`nyt-${payload.date.weekday.toLowerCase()}`);
+    tags.push(`${source}-${payload.date.weekday.toLowerCase()}`);
   }
   if (extraTags) {
     extraTags
@@ -127,7 +257,7 @@ async function handleSaveCard(payload) {
     fields[settings.notesField] = payload.notes;
   }
   if (settings.sourceField) {
-    fields[settings.sourceField] = "NYT";
+    fields[settings.sourceField] = payload.source === "newyorker" ? "New Yorker" : "NYT";
   }
   if (settings.dateField && payload.date) {
     fields[settings.dateField] = payload.date.iso;

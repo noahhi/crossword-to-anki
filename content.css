@@ -65,6 +65,56 @@
   font-weight: 600;
 }
 
+#cwa-overlay .cwa-history {
+  margin-top: 10px;
+  font-size: 11px;
+  color: #555;
+}
+
+#cwa-overlay .cwa-history:not(:empty) {
+  border-top: 1px solid #e8e8e8;
+  padding-top: 8px;
+}
+
+#cwa-overlay .cwa-history-loading {
+  color: #999;
+  font-style: italic;
+}
+
+#cwa-overlay .cwa-history-count {
+  font-weight: 500;
+  color: #444;
+  margin-bottom: 5px;
+}
+
+#cwa-overlay .cwa-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 4px;
+}
+
+#cwa-overlay .cwa-history-table th {
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #999;
+  padding-bottom: 3px;
+}
+
+#cwa-overlay .cwa-history-table td {
+  padding: 2px 0;
+  vertical-align: top;
+  color: #555;
+}
+
+#cwa-overlay .cwa-history-date {
+  font-family: ui-monospace, "SFMono-Regular", monospace;
+  white-space: nowrap;
+  padding-right: 10px;
+  color: #888;
+}
+
 #cwa-overlay .cwa-meta {
   margin: 8px 0 4px;
   font-size: 11px;

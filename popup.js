@@ -4,16 +4,18 @@ const settingsBtn = document.getElementById("settings");
 
 (async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  const onNyt =
-    tab && /^https:\/\/www\.nytimes\.com\/(crosswords|games)\//.test(tab.url || "");
+  const url = (tab && tab.url) || "";
+  const onNyt = /^https:\/\/www\.nytimes\.com\/(crosswords|games)\//.test(url);
+  const onNewYorker = /^https:\/\/www\.newyorker\.com\/puzzles-and-games-dept\/crossword/.test(url);
+  const onCrossword = onNyt || onNewYorker;
 
-  if (!onNyt) {
-    ctx.textContent = "Open a NYT crossword page to capture clues.";
+  if (!onCrossword) {
+    ctx.textContent = "Open an NYT or New Yorker crossword page to capture clues.";
     captureBtn.disabled = true;
     return;
   }
 
-  ctx.textContent = "Ready on NYT crossword.";
+  ctx.textContent = onNewYorker ? "Ready on New Yorker crossword." : "Ready on NYT crossword.";
   captureBtn.disabled = false;
   captureBtn.addEventListener("click", async () => {
     try {
