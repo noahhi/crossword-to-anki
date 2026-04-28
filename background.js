@@ -8,6 +8,7 @@ import {
   addNote,
   findNotesByAnswer,
   getNotesInfo,
+  sync,
   updateNoteFields,
 } from "./anki.js";
 
@@ -245,6 +246,7 @@ async function handleSaveCard(payload) {
     await updateNoteFields(info.noteId, {
       [settings.clueField]: merged,
     });
+    sync().catch(() => {});
     return { message: "Appended clue to existing card." };
   }
 
@@ -270,5 +272,6 @@ async function handleSaveCard(payload) {
     tags: buildTags(payload, settings.extraTags),
   });
 
+  sync().catch(() => {});
   return { message: "Added new card." };
 }

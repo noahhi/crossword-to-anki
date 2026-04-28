@@ -56,6 +56,10 @@ export async function updateNoteFields(noteId, fields) {
   return ankiInvoke("updateNoteFields", { note: { id: noteId, fields } });
 }
 
+export async function sync() {
+  return ankiInvoke("sync");
+}
+
 export async function addNote({ deckName, modelName, fields, tags }) {
   return ankiInvoke("addNote", {
     note: {
