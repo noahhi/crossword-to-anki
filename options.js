@@ -18,6 +18,8 @@ const els = {
   notesField: $("#notesField"),
   sourceField: $("#sourceField"),
   dateField: $("#dateField"),
+  imageField: $("#imageField"),
+  autoFetchImage: $("#autoFetchImage"),
   extraTags: $("#extraTags"),
   save: $("#save"),
   saveStatus: $("#save-status"),
@@ -63,6 +65,8 @@ async function init() {
     "notesField",
     "sourceField",
     "dateField",
+    "imageField",
+    "autoFetchImage",
     "extraTags",
   ]);
   if (saved.deckName && decks.includes(saved.deckName)) {
@@ -72,6 +76,7 @@ async function init() {
     els.model.value = saved.modelName;
   }
   if (saved.extraTags) els.extraTags.value = saved.extraTags;
+  els.autoFetchImage.checked = !!saved.autoFetchImage;
 
   await loadModelFields(els.model.value, saved);
 }
@@ -111,6 +116,7 @@ async function loadModelFields(modelName, saved = {}) {
   fillSelect(els.notesField, fields, true);
   fillSelect(els.sourceField, fields, true);
   fillSelect(els.dateField, fields, true);
+  fillSelect(els.imageField, fields, true);
 
   // Heuristic defaults — match common field names.
   setBestGuess(els.clueField, saved.clueField, fields, [
@@ -132,6 +138,7 @@ async function loadModelFields(modelName, saved = {}) {
     "Source",
   ]);
   setBestGuess(els.dateField, saved.dateField, fields, ["Date", "Added"]);
+  setBestGuess(els.imageField, saved.imageField, fields, ["Image", "Picture", "Photo"]);
 
   els.fieldset.disabled = false;
 }
@@ -159,6 +166,8 @@ async function saveSettings() {
     notesField: els.notesField.value || "",
     sourceField: els.sourceField.value || "",
     dateField: els.dateField.value || "",
+    imageField: els.imageField.value || "",
+    autoFetchImage: els.autoFetchImage.checked,
     extraTags: els.extraTags.value.trim(),
   };
   await chrome.storage.sync.set(data);

@@ -8,6 +8,7 @@
     "https://www.nytimes.com/*",
     "https://www.newyorker.com/*",
     "https://www.xwordinfo.com/*",
+    "https://en.wikipedia.org/*",
     "http://127.0.0.1:8765/*"
   ],
   "background": {

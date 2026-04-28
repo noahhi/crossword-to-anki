@@ -157,3 +157,31 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+#cwa-overlay .cwa-image-hint {
+  font-weight: 400;
+  color: #888;
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+#cwa-overlay .cwa-image-preview {
+  margin: 6px 0 4px;
+}
+
+#cwa-overlay .cwa-image-thumb {
+  max-width: 100%;
+  max-height: 140px;
+  border-radius: 4px;
+  border: 1px solid #e0e0e0;
+  display: block;
+}
+
+#cwa-overlay .cwa-image-remove {
+  margin-top: 4px;
+  font-size: 11px;
+  padding: 2px 8px;
+  color: #c53030;
+  border-color: #c53030;
+  background: white;
+}

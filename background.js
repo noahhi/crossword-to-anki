@@ -8,6 +8,7 @@ import {
   addNote,
   findNotesByAnswer,
   getNotesInfo,
+  storeMediaFile,
   sync,
   updateNoteFields,
 } from "./anki.js";
@@ -58,7 +59,28 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .catch(() => sendResponse({ ok: false }));
     return true;
   }
+
+  if (msg && msg.type === "FETCH_IMAGE") {
+    fetchImageForWord(msg.word)
+      .then((imageUrl) => sendResponse({ imageUrl }))
+      .catch(() => sendResponse({ imageUrl: null }));
+    return true;
+  }
 });
+
+// ---- Wikipedia image lookup ------------------------------------------------
+
+async function fetchImageForWord(word) {
+  // Wikipedia titles are title-case; crossword answers are ALL-CAPS.
+  const title = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  const resp = await fetch(
+    `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
+    { headers: { Accept: "application/json" } }
+  );
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  return data.thumbnail?.source || null;
+}
 
 // ---- XWordInfo word history ------------------------------------------------
 //
@@ -188,6 +210,8 @@ async function getSettings() {
     "notesField",
     "sourceField",
     "dateField",
+    "imageField",
+    "autoFetchImage",
     "extraTags",
   ]);
   if (!s.deckName || !s.modelName || !s.clueField || !s.answerField) {
@@ -263,6 +287,17 @@ async function handleSaveCard(payload) {
   }
   if (settings.dateField && payload.date) {
     fields[settings.dateField] = payload.date.iso;
+  }
+  if (settings.imageField && payload.imageUrl) {
+    try {
+      const ext = (payload.imageUrl.split(".").pop().split("?")[0] || "jpg").toLowerCase();
+      const safeAnswer = payload.answer.replace(/[^A-Z0-9]/gi, "_");
+      const filename = `crossword_${safeAnswer}.${ext}`;
+      await storeMediaFile(filename, payload.imageUrl);
+      fields[settings.imageField] = `<img src="${filename}">`;
+    } catch {
+      // Image storage failure should not block the card save
+    }
   }
 
   await addNote({

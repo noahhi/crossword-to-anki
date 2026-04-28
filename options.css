@@ -53,6 +53,15 @@ label {
   font-weight: 500;
 }
 
+label.label-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: normal;
+  cursor: pointer;
+  margin-top: 14px;
+}
+
 label .opt {
   font-weight: normal;
   color: var(--muted);

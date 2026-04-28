@@ -60,6 +60,10 @@ export async function sync() {
   return ankiInvoke("sync");
 }
 
+export async function storeMediaFile(filename, url) {
+  return ankiInvoke("storeMediaFile", { filename, url });
+}
+
 export async function addNote({ deckName, modelName, fields, tags }) {
   return ankiInvoke("addNote", {
     note: {

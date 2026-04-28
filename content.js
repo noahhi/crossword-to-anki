@@ -180,6 +180,12 @@
         <label>Notes (optional)
           <textarea class="cwa-notes" rows="2" placeholder="Definition, mnemonic, why it tripped you up…"></textarea>
         </label>
+        <div class="cwa-image-section" style="display:none">
+          <label>Image <span class="cwa-image-hint"></span>
+            <div class="cwa-image-preview"></div>
+            <input class="cwa-image-url" type="text" placeholder="Paste image URL…" />
+          </label>
+        </div>
         <div class="cwa-history"></div>
         <div class="cwa-meta"></div>
         <div class="cwa-status"></div>
@@ -218,6 +224,12 @@
     overlay.querySelector(".cwa-save").addEventListener("click", () =>
       handleSave(captured)
     );
+    overlay.querySelector(".cwa-image-url").addEventListener("change", (e) => {
+      renderImagePreview(
+        overlay.querySelector(".cwa-image-preview"),
+        e.target.value.trim()
+      );
+    });
 
     // Focus the answer field if it's empty (likely case when capturing
     // before filling the entry); otherwise focus Save.
@@ -248,6 +260,52 @@
       <div class="cwa-history-count">Appeared ${resp.count} time${resp.count === 1 ? "" : "s"} in NYT crosswords</div>
       ${rows ? `<table class="cwa-history-table"><thead><tr><th>Date</th><th>Clue</th></tr></thead><tbody>${rows}</tbody></table>` : ""}
     `;
+  }
+
+  function renderImagePreview(previewEl, url) {
+    if (!url) {
+      previewEl.innerHTML = "";
+      return;
+    }
+    previewEl.innerHTML = `<img class="cwa-image-thumb" src="${escapeHtml(url)}" alt="Image preview" />
+      <button class="cwa-image-remove">Remove</button>`;
+    previewEl.querySelector(".cwa-image-remove").addEventListener("click", () => {
+      if (!overlayEl) return;
+      overlayEl.querySelector(".cwa-image-url").value = "";
+      previewEl.innerHTML = "";
+    });
+  }
+
+  function setImagePreview(url, hintText) {
+    if (!overlayEl) return;
+    const hintEl = overlayEl.querySelector(".cwa-image-hint");
+    if (hintEl && hintText) hintEl.textContent = hintText;
+    overlayEl.querySelector(".cwa-image-url").value = url;
+    renderImagePreview(overlayEl.querySelector(".cwa-image-preview"), url);
+  }
+
+  async function initImageSection(captured) {
+    if (!overlayEl) return;
+    const settings = await chrome.storage.sync.get(["imageField", "autoFetchImage"]);
+    if (!settings.imageField) return;
+
+    const section = overlayEl.querySelector(".cwa-image-section");
+    section.style.display = "";
+
+    if (settings.autoFetchImage && captured.answer) {
+      const hintEl = overlayEl.querySelector(".cwa-image-hint");
+      hintEl.textContent = "fetching…";
+      chrome.runtime.sendMessage(
+        { type: "FETCH_IMAGE", word: captured.answer },
+        (resp) => {
+          if (!overlayEl) return;
+          hintEl.textContent = "";
+          if (resp && resp.imageUrl) {
+            setImagePreview(resp.imageUrl, "from Wikipedia");
+          }
+        }
+      );
+    }
   }
 
   function escapeHtml(str) {
@@ -283,6 +341,9 @@
       return;
     }
 
+    const imageUrlEl = overlayEl.querySelector(".cwa-image-url");
+    const imageUrl = imageUrlEl ? imageUrlEl.value.trim() || null : null;
+
     setStatus("Saving…");
     overlayEl.querySelector(".cwa-save").disabled = true;
 
@@ -295,6 +356,7 @@
           clue,
           answer,
           notes,
+          imageUrl,
           direction: captured.direction,
           date: captured.date,
         },
@@ -323,6 +385,7 @@
     if (msg && msg.type === "CAPTURE_CLUE") {
       const captured = capture();
       showOverlay(captured);
+      initImageSection(captured);
       sendResponse({ ok: true });
     }
     return true;
