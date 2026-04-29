@@ -210,6 +210,7 @@ async function getSettings() {
     "notesField",
     "sourceField",
     "dateField",
+    "lengthField",
     "imageField",
     "autoFetchImage",
     "extraTags",
@@ -287,6 +288,9 @@ async function handleSaveCard(payload) {
   }
   if (settings.dateField && payload.date) {
     fields[settings.dateField] = payload.date.iso;
+  }
+  if (settings.lengthField && payload.answerLength) {
+    fields[settings.lengthField] = String(payload.answerLength);
   }
   if (settings.imageField && payload.imageUrl) {
     try {

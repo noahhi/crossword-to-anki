@@ -198,11 +198,7 @@
     document.body.appendChild(overlay);
     overlayEl = overlay;
 
-    const clueWithLength =
-      captured.clue && captured.answerLength
-        ? `${captured.clue} (${captured.answerLength})`
-        : captured.clue || "";
-    overlay.querySelector(".cwa-clue").value = clueWithLength;
+    overlay.querySelector(".cwa-clue").value = captured.clue || "";
     overlay.querySelector(".cwa-answer").value = captured.answer || "";
 
     const metaBits = [];
@@ -357,6 +353,7 @@
           answer,
           notes,
           imageUrl,
+          answerLength: captured.answerLength,
           direction: captured.direction,
           date: captured.date,
         },
