@@ -292,7 +292,7 @@
       const hintEl = overlayEl.querySelector(".cwa-image-hint");
       hintEl.textContent = "fetching…";
       chrome.runtime.sendMessage(
-        { type: "FETCH_IMAGE", word: captured.answer },
+        { type: "FETCH_IMAGE", word: captured.answer, clue: captured.clue },
         (resp) => {
           if (!overlayEl) return;
           hintEl.textContent = "";

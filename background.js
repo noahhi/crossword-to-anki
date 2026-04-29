@@ -61,7 +61,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
 
   if (msg && msg.type === "FETCH_IMAGE") {
-    fetchImageForWord(msg.word)
+    fetchImageForWord(msg.word, msg.clue)
       .then((imageUrl) => sendResponse({ imageUrl }))
       .catch(() => sendResponse({ imageUrl: null }));
     return true;
@@ -70,9 +70,21 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
 // ---- Wikipedia image lookup ------------------------------------------------
 
-async function fetchImageForWord(word) {
-  // Wikipedia titles are title-case; crossword answers are ALL-CAPS.
-  const title = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+const STOP_WORDS = new Set([
+  "a", "an", "the", "of", "in", "on", "at", "to", "for", "with",
+  "by", "from", "as", "is", "was", "are", "were", "be", "or", "and",
+  "its", "it", "that", "this",
+]);
+
+function extractKeywords(clue) {
+  return clue
+    .replace(/[^a-z\s]/gi, " ")
+    .split(/\s+/)
+    .filter((w) => w.length > 1 && !STOP_WORDS.has(w.toLowerCase()))
+    .join(" ");
+}
+
+async function fetchWikipediaThumbnail(title) {
   const resp = await fetch(
     `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`,
     { headers: { Accept: "application/json" } }
@@ -80,6 +92,34 @@ async function fetchImageForWord(word) {
   if (!resp.ok) return null;
   const data = await resp.json();
   return data.thumbnail?.source || null;
+}
+
+async function searchWikipediaTitle(query) {
+  const url =
+    `https://en.wikipedia.org/w/api.php?action=query&list=search` +
+    `&srsearch=${encodeURIComponent(query)}&format=json&srlimit=1`;
+  const resp = await fetch(url, { headers: { Accept: "application/json" } });
+  if (!resp.ok) return null;
+  const data = await resp.json();
+  return data.query?.search?.[0]?.title || null;
+}
+
+async function fetchImageForWord(word, clue) {
+  // Wikipedia titles are title-case; crossword answers are ALL-CAPS.
+  const title = word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+
+  // 1. Direct page lookup.
+  const direct = await fetchWikipediaThumbnail(title);
+  if (direct) return direct;
+
+  // 2. Fallback: search Wikipedia using answer + clue keywords so partial
+  //    answers (e.g. "PAOLO" + "Painter Veronese") resolve to the full concept.
+  if (!clue) return null;
+  const keywords = extractKeywords(clue);
+  const query = keywords ? `${title} ${keywords}` : title;
+  const searchTitle = await searchWikipediaTitle(query);
+  if (!searchTitle || searchTitle.toLowerCase() === title.toLowerCase()) return null;
+  return fetchWikipediaThumbnail(searchTitle);
 }
 
 // ---- XWordInfo word history ------------------------------------------------
