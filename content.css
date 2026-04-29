@@ -129,6 +129,7 @@
 }
 #cwa-overlay .cwa-status--ok    { color: #2f855a; }
 #cwa-overlay .cwa-status--error { color: #c53030; }
+#cwa-overlay .cwa-status--warn  { color: #b7791f; }
 
 #cwa-overlay .cwa-actions {
   display: flex;

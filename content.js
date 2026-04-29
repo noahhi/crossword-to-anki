@@ -16,6 +16,23 @@
     return window.location.hostname.includes("newyorker.com") ? "newyorker" : "nyt";
   }
 
+  // -------- Puzzmo (New Yorker) scraping ------------------------------------
+
+  function getPuzzmoCapture() {
+    const el = document.querySelector('div[aria-live="assertive"][aria-atomic="true"]');
+    if (!el) return null;
+    const text = el.textContent.trim();
+    // Format: "Clue 6A, Not meant to be taken metaphorically . Answer: 7 letters Letter: 7 this tile has a L , Fill: L I T E R A L"
+    const clueMatch = text.match(/Clue\s+(\d+)([AaDd]),?\s+(.+?)\s*\.\s*Answer:\s*(\d+)\s*letters/);
+    if (!clueMatch) return null;
+    const [, , dirLetter, clueText, lengthStr] = clueMatch;
+    const direction = dirLetter.toUpperCase() === "A" ? "across" : "down";
+    const answerLength = parseInt(lengthStr, 10);
+    const fillMatch = text.match(/Fill:\s+([A-Z\s]+)\s*$/);
+    const answer = fillMatch ? fillMatch[1].replace(/\s+/g, "") : null;
+    return { clue: clueText.trim(), direction, answerLength, answer };
+  }
+
   // -------- DOM scraping ----------------------------------------------------
 
   function getActiveClueElement() {
@@ -147,12 +164,18 @@
   }
 
   function capture() {
+    const source = detectSource();
+    const date = getPuzzleDate();
+    if (source === "newyorker") {
+      const puzzmo = getPuzzmoCapture();
+      if (puzzmo) {
+        return { ...puzzmo, date, source };
+      }
+    }
     const clue = getActiveClueText();
     const answer = getActiveAnswerLetters();
     const answerLength = getActiveAnswerLength();
     const direction = getActiveDirection();
-    const date = getPuzzleDate();
-    const source = detectSource();
     return { clue, answer, answerLength, direction, date, source };
   }
 
@@ -365,7 +388,16 @@
           overlayEl.querySelector(".cwa-save").disabled = false;
           return;
         }
-        if (resp && resp.ok) {
+        if (resp && resp.ok && resp.duplicate) {
+          setStatus("Card already exists in deck.", "warn");
+          const saveBtn = overlayEl.querySelector(".cwa-save");
+          saveBtn.textContent = "Edit in Anki";
+          saveBtn.disabled = false;
+          saveBtn.onclick = () => {
+            chrome.runtime.sendMessage({ type: "EDIT_NOTE", noteId: resp.noteId });
+            closeOverlay();
+          };
+        } else if (resp && resp.ok) {
           setStatus(resp.message || "Saved.", "ok");
           setTimeout(closeOverlay, 900);
         } else {

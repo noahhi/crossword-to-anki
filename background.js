@@ -8,6 +8,7 @@ import {
   addNote,
   findNotesByAnswer,
   getNotesInfo,
+  guiEditNote,
   storeMediaFile,
   sync,
   updateNoteFields,
@@ -51,6 +52,13 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       .then((result) => sendResponse({ ok: true, ...result }))
       .catch((err) => sendResponse({ ok: false, error: err.message }));
     return true; // keep channel open for async response
+  }
+
+  if (msg && msg.type === "EDIT_NOTE") {
+    guiEditNote(msg.noteId)
+      .then(() => sendResponse({ ok: true }))
+      .catch((err) => sendResponse({ ok: false, error: err.message }));
+    return true;
   }
 
   if (msg && msg.type === "FETCH_WORD_HISTORY") {
@@ -293,26 +301,11 @@ async function handleSaveCard(payload) {
 
   if (existingIds && existingIds.length) {
     const [info] = await getNotesInfo([existingIds[0]]);
-    const currentClue = (info.fields[settings.clueField] || {}).value || "";
-    // Avoid double-adding if the same clue is already there.
-    const already = currentClue
-      .split(/\s*\/\s*/)
-      .map((s) => s.trim().toLowerCase())
-      .includes(payload.clue.toLowerCase());
-
-    if (already) {
-      return { message: "Already in deck — clue unchanged." };
-    }
-
-    const merged = currentClue
-      ? `${currentClue} / ${payload.clue}`
-      : payload.clue;
-
-    await updateNoteFields(info.noteId, {
-      [settings.clueField]: merged,
-    });
-    sync().catch(() => {});
-    return { message: "Appended clue to existing card." };
+    return {
+      duplicate: true,
+      noteId: info.noteId,
+      message: "Card already exists in deck.",
+    };
   }
 
   // 2) No existing note - create one.
