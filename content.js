@@ -229,14 +229,22 @@
     if (captured.date) metaBits.push(captured.date.pretty);
     overlay.querySelector(".cwa-meta").textContent = metaBits.join(" · ");
 
-    if (captured.answer) {
-      const historyEl = overlay.querySelector(".cwa-history");
+    const historyEl = overlay.querySelector(".cwa-history");
+    let lastHistoryWord = null;
+
+    function fetchHistory(word) {
+      if (!word) return;
+      const upper = word.toUpperCase();
+      if (upper === lastHistoryWord) return;
+      lastHistoryWord = upper;
       historyEl.innerHTML = '<div class="cwa-history-loading">Loading history…</div>';
       chrome.runtime.sendMessage(
-        { type: "FETCH_WORD_HISTORY", word: captured.answer },
+        { type: "FETCH_WORD_HISTORY", word: upper },
         (resp) => renderHistory(historyEl, resp)
       );
     }
+
+    if (captured.answer) fetchHistory(captured.answer);
 
     overlay.querySelector(".cwa-close").addEventListener("click", closeOverlay);
     overlay.querySelector(".cwa-cancel").addEventListener("click", closeOverlay);
@@ -253,6 +261,7 @@
     // Focus the answer field if it's empty (likely case when capturing
     // before filling the entry); otherwise focus Save.
     const answerEl = overlay.querySelector(".cwa-answer");
+    answerEl.addEventListener("blur", () => fetchHistory(answerEl.value.trim()));
     if (!answerEl.value) answerEl.focus();
     else overlay.querySelector(".cwa-save").focus();
 
