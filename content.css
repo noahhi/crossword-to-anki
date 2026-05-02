@@ -186,3 +186,70 @@
   border-color: #c53030;
   background: white;
 }
+
+/* Dark mode overlay */
+#cwa-overlay.cwa-dark {
+  color: #e8e8e8;
+}
+#cwa-overlay.cwa-dark .cwa-card {
+  background: #2d2d2d;
+  border-color: #444;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5);
+}
+#cwa-overlay.cwa-dark .cwa-close {
+  color: #aaa;
+}
+#cwa-overlay.cwa-dark label {
+  color: #ccc;
+}
+#cwa-overlay.cwa-dark textarea,
+#cwa-overlay.cwa-dark input {
+  background: #3a3a3a;
+  border-color: #555;
+  color: #e8e8e8;
+}
+#cwa-overlay.cwa-dark .cwa-history {
+  color: #aaa;
+}
+#cwa-overlay.cwa-dark .cwa-history:not(:empty) {
+  border-top-color: #444;
+}
+#cwa-overlay.cwa-dark .cwa-history-count {
+  color: #ccc;
+}
+#cwa-overlay.cwa-dark .cwa-history-table th {
+  color: #777;
+}
+#cwa-overlay.cwa-dark .cwa-history-table td {
+  color: #aaa;
+}
+#cwa-overlay.cwa-dark .cwa-history-date {
+  color: #777;
+}
+#cwa-overlay.cwa-dark .cwa-meta {
+  color: #999;
+}
+#cwa-overlay.cwa-dark .cwa-status {
+  color: #aaa;
+}
+#cwa-overlay.cwa-dark .cwa-status--ok    { color: #68d391; }
+#cwa-overlay.cwa-dark .cwa-status--error { color: #fc8181; }
+#cwa-overlay.cwa-dark .cwa-status--warn  { color: #f6ad55; }
+#cwa-overlay.cwa-dark button {
+  background: #3a3a3a;
+  border-color: #555;
+  color: #e8e8e8;
+}
+#cwa-overlay.cwa-dark .cwa-save {
+  background: #5b9bd5;
+  border-color: #5b9bd5;
+  color: white;
+}
+#cwa-overlay.cwa-dark .cwa-image-remove {
+  background: #2d2d2d;
+  color: #fc8181;
+  border-color: #fc8181;
+}
+#cwa-overlay.cwa-dark .cwa-image-thumb {
+  border-color: #555;
+}

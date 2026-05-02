@@ -221,6 +221,10 @@
     document.body.appendChild(overlay);
     overlayEl = overlay;
 
+    chrome.storage.sync.get("darkMode", ({ darkMode }) => {
+      overlay.classList.toggle("cwa-dark", !!darkMode);
+    });
+
     overlay.querySelector(".cwa-clue").value = captured.clue || "";
     overlay.querySelector(".cwa-answer").value = captured.answer || "";
 

@@ -6,6 +6,24 @@ import {
 
 const $ = (sel) => document.querySelector(sel);
 
+// Dark mode
+(async () => {
+  const { darkMode } = await chrome.storage.sync.get("darkMode");
+  applyTheme(!!darkMode);
+  $("#dark-toggle").addEventListener("click", async () => {
+    const isDark = document.documentElement.classList.contains("dark");
+    const next = !isDark;
+    await chrome.storage.sync.set({ darkMode: next });
+    applyTheme(next);
+  });
+})();
+
+function applyTheme(dark) {
+  document.documentElement.classList.toggle("dark", dark);
+  const btn = $("#dark-toggle");
+  if (btn) btn.textContent = dark ? "Light mode" : "Dark mode";
+}
+
 const els = {
   status: $("#anki-status"),
   refresh: $("#refresh"),
