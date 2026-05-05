@@ -120,22 +120,27 @@ async function fetchImageForWord(word, clue) {
   const direct = await fetchWikipediaThumbnail(title);
   if (direct) return direct;
 
-  // 2. Search on just the answer — handles plurals/variants like "Riels" → "Cambodian riel".
+  // 2. Search with answer + clue keywords first — avoids false matches from
+  //    answer-only searches hitting unrelated pages (e.g. "Omeara" → music venue).
+  if (clue) {
+    const keywords = extractKeywords(clue);
+    if (keywords) {
+      const clueSearchTitle = await searchWikipediaTitle(`${title} ${keywords}`);
+      if (clueSearchTitle && clueSearchTitle.toLowerCase() !== title.toLowerCase()) {
+        const clueSearchImg = await fetchWikipediaThumbnail(clueSearchTitle);
+        if (clueSearchImg) return clueSearchImg;
+      }
+    }
+  }
+
+  // 3. Fallback: search on just the answer — handles plurals/variants like "Riels" → "Cambodian riel".
   const answerSearchTitle = await searchWikipediaTitle(title);
   if (answerSearchTitle && answerSearchTitle.toLowerCase() !== title.toLowerCase()) {
     const answerSearchImg = await fetchWikipediaThumbnail(answerSearchTitle);
     if (answerSearchImg) return answerSearchImg;
   }
 
-  // 3. Fallback: search with answer + clue keywords so partial answers
-  //    (e.g. "PAOLO" + "Painter Veronese") resolve to the full concept.
-  if (!clue) return null;
-  const keywords = extractKeywords(clue);
-  if (!keywords) return null;
-  const query = `${title} ${keywords}`;
-  const searchTitle = await searchWikipediaTitle(query);
-  if (!searchTitle || searchTitle.toLowerCase() === title.toLowerCase()) return null;
-  return fetchWikipediaThumbnail(searchTitle);
+  return null;
 }
 
 // ---- XWordInfo word history ------------------------------------------------
