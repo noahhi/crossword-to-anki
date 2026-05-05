@@ -26,6 +26,8 @@
   font-weight: 600;
   font-size: 13px;
   margin-bottom: 10px;
+  cursor: grab;
+  user-select: none;
 }
 
 #cwa-overlay .cwa-close {

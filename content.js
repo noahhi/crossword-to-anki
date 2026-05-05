@@ -270,6 +270,31 @@
       if (e.key === "Escape") closeOverlay();
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave(captured);
     });
+
+    // Drag the overlay by its header.
+    const header = overlay.querySelector(".cwa-header");
+    header.addEventListener("mousedown", (e) => {
+      if (e.button !== 0) return;
+      const rect = overlay.getBoundingClientRect();
+      // Switch from right-anchored CSS positioning to explicit left/top.
+      overlay.style.right = "auto";
+      overlay.style.left = rect.left + "px";
+      overlay.style.top = rect.top + "px";
+      const offsetX = e.clientX - rect.left;
+      const offsetY = e.clientY - rect.top;
+
+      function onMove(ev) {
+        overlay.style.left = (ev.clientX - offsetX) + "px";
+        overlay.style.top = (ev.clientY - offsetY) + "px";
+      }
+      function onUp() {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+      }
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+      e.preventDefault();
+    });
   }
 
   function renderHistory(historyEl, resp) {
