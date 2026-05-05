@@ -210,7 +210,6 @@
           </label>
         </div>
         <div class="cwa-history"></div>
-        <div class="cwa-meta"></div>
         <div class="cwa-status"></div>
         <div class="cwa-actions">
           <button class="cwa-cancel">Cancel</button>
@@ -223,11 +222,6 @@
 
     overlay.querySelector(".cwa-clue").value = captured.clue || "";
     overlay.querySelector(".cwa-answer").value = captured.answer || "";
-
-    const metaBits = [];
-    if (captured.direction) metaBits.push(captured.direction);
-    if (captured.date) metaBits.push(captured.date.pretty);
-    overlay.querySelector(".cwa-meta").textContent = metaBits.join(" · ");
 
     const historyEl = overlay.querySelector(".cwa-history");
     let lastHistoryWord = null;
