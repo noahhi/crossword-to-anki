@@ -2,6 +2,8 @@
 
 A Chrome extension that captures clue/answer pairs from NYT crossword puzzles and adds them as cards to your Anki deck via AnkiConnect.
 
+<img width="200" alt="image" src="https://github.com/user-attachments/assets/7b851da1-ab26-44fe-80e3-6595f3e5fce3" />
+
 ## How it works
 
 While you're solving on `nytimes.com/crosswords` or `nytimes.com/games`, hit `Ctrl+Shift+A` (or `Cmd+Shift+A` on Mac). A small overlay pops up pre-filled with the active clue and the letters in the answer. Tweak anything if you need to, click **Save to Anki**, and the card lands in the deck and note type you picked at setup.
