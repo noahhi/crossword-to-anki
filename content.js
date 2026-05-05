@@ -240,7 +240,7 @@
       historyEl.innerHTML = '<div class="cwa-history-loading">Loading history…</div>';
       chrome.runtime.sendMessage(
         { type: "FETCH_WORD_HISTORY", word: upper },
-        (resp) => renderHistory(historyEl, resp)
+        (resp) => renderHistory(historyEl, resp, captured.date?.iso)
       );
     }
 
@@ -297,13 +297,16 @@
     });
   }
 
-  function renderHistory(historyEl, resp) {
+  function renderHistory(historyEl, resp, currentIsoDate) {
     if (!historyEl) return;
     if (!resp || !resp.ok || !resp.count) {
       historyEl.innerHTML = "";
       return;
     }
-    const rows = (resp.recentClues || [])
+    const clues = (resp.recentClues || []).filter(
+      (e) => !currentIsoDate || !e.isoDate || e.isoDate !== currentIsoDate
+    );
+    const rows = clues
       .map(
         (e) =>
           `<tr><td class="cwa-history-date">${e.date}</td><td>${escapeHtml(e.clue)}</td></tr>`

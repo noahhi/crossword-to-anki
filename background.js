@@ -250,7 +250,15 @@ function parseFinderHtml(html) {
 
     // cells[0]=date, cells[1]=grid, cells[2]=clue
     if (cells.length >= 3 && cells[0] && cells[2]) {
-      recentClues.push({ date: cells[0], clue: cells[2] });
+      const isoMatch = rowHtml.match(/data-date=["']?([^"'\s>]+)["']?/);
+      const rawDate = isoMatch ? isoMatch[1] : null;
+      // Normalize M/D/YYYY → YYYY-MM-DD to match captured.date.iso format.
+      let isoDate = rawDate;
+      if (rawDate) {
+        const mdyMatch = rawDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (mdyMatch) isoDate = `${mdyMatch[3]}-${mdyMatch[1].padStart(2, "0")}-${mdyMatch[2].padStart(2, "0")}`;
+      }
+      recentClues.push({ date: cells[0], clue: cells[2], isoDate });
     }
   }
 
