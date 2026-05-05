@@ -56,7 +56,7 @@
     // Concatenate visible text and split off the leading label.
     const raw = el.innerText.trim();
     // Remove a leading "12A" / "3D" style label if present.
-    const cleaned = raw.replace(/^\s*\d+\s*[AD]?\s*[\.:\-]?\s*/i, "").trim();
+    const cleaned = raw.replace(/^\s*\d+\s*(?:[AD](?!\w))?\s*[\.:\-]?\s*/i, "").trim();
     return cleaned || raw;
   }
 
