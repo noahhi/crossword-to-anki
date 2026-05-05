@@ -12,6 +12,8 @@ If you've already saved a card with the same answer (e.g., you've seen `OREO` cl
 
 Each card is auto-tagged with `crossword`, `nyt`, and the puzzle's day-of-week (e.g. `nyt-saturday`), which is useful because difficulty varies wildly by day.
 
+The overlay also shows how many times the answer has appeared in NYT crosswords and a list of recent clues, sourced from [XWordInfo](https://xwordinfo.com). XWordInfo will only serve a handful of lookups to anonymous visitors — for reliable history you'll need a logged-in account on their site (the extension sends your browser's session cookie automatically once you're logged in).
+
 ## One-time setup
 
 ### 1. Install AnkiConnect in Anki
