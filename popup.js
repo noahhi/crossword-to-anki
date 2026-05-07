@@ -1,8 +1,24 @@
 const ctx = document.getElementById("ctx");
 const captureBtn = document.getElementById("capture");
 const settingsBtn = document.getElementById("settings");
+const darkToggle = document.getElementById("dark-toggle");
+
+function applyTheme(dark) {
+  document.documentElement.classList.toggle("dark", dark);
+  darkToggle.textContent = dark ? "Light" : "Dark";
+}
 
 (async () => {
+  const { darkMode } = await chrome.storage.sync.get("darkMode");
+  applyTheme(!!darkMode);
+
+  darkToggle.addEventListener("click", async () => {
+    const isDark = document.documentElement.classList.contains("dark");
+    const next = !isDark;
+    await chrome.storage.sync.set({ darkMode: next });
+    applyTheme(next);
+  });
+
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const url = (tab && tab.url) || "";
   const onNyt = /^https:\/\/www\.nytimes\.com\/(crosswords|games)\//.test(url);
