@@ -265,11 +265,30 @@
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave(captured);
     });
 
-    // Drag the overlay by its header.
-    const header = overlay.querySelector(".cwa-header");
-    header.addEventListener("mousedown", (e) => {
+    // Drag the overlay from the header or within 16px of any card edge.
+    const card = overlay.querySelector(".cwa-card");
+    const DRAG_EDGE = 16;
+
+    function isDraggable(e) {
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const nearEdge = x < DRAG_EDGE || x > rect.width - DRAG_EDGE ||
+                       y < DRAG_EDGE || y > rect.height - DRAG_EDGE;
+      const inHeader = e.target.closest(".cwa-header") && !e.target.closest(".cwa-close");
+      return nearEdge || inHeader;
+    }
+
+    card.addEventListener("mousemove", (e) => {
+      card.style.cursor = isDraggable(e) ? "grab" : "";
+    });
+    card.addEventListener("mouseleave", () => { card.style.cursor = ""; });
+
+    card.addEventListener("mousedown", (e) => {
       if (e.button !== 0) return;
-      const rect = overlay.getBoundingClientRect();
+      if (!isDraggable(e)) return;
+      const rect = card.getBoundingClientRect();
+
       // Switch from right-anchored CSS positioning to explicit left/top.
       overlay.style.right = "auto";
       overlay.style.left = rect.left + "px";
