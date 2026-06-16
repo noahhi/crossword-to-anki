@@ -18,7 +18,6 @@ const els = {
   notesField: $("#notesField"),
   sourceField: $("#sourceField"),
   dateField: $("#dateField"),
-  lengthField: $("#lengthField"),
   imageField: $("#imageField"),
   autoFetchImage: $("#autoFetchImage"),
   extraTags: $("#extraTags"),
@@ -66,7 +65,6 @@ async function init() {
     "notesField",
     "sourceField",
     "dateField",
-    "lengthField",
     "imageField",
     "autoFetchImage",
     "extraTags",
@@ -118,7 +116,6 @@ async function loadModelFields(modelName, saved = {}) {
   fillSelect(els.notesField, fields, true);
   fillSelect(els.sourceField, fields, true);
   fillSelect(els.dateField, fields, true);
-  fillSelect(els.lengthField, fields, true);
   fillSelect(els.imageField, fields, true);
 
   // Heuristic defaults — match common field names.
@@ -142,7 +139,6 @@ async function loadModelFields(modelName, saved = {}) {
     "Source",
   ]);
   setBestGuess(els.dateField, saved.dateField, fields, ["Date", "Added"]);
-  setBestGuess(els.lengthField, saved.lengthField, fields, ["Length"]);
   setBestGuess(els.imageField, saved.imageField, fields, ["Image", "Picture", "Photo"]);
 
   els.fieldset.disabled = false;
@@ -171,7 +167,6 @@ async function saveSettings() {
     notesField: els.notesField.value || "",
     sourceField: els.sourceField.value || "",
     dateField: els.dateField.value || "",
-    lengthField: els.lengthField.value || "",
     imageField: els.imageField.value || "",
     autoFetchImage: els.autoFetchImage.checked,
     extraTags: els.extraTags.value.trim(),
