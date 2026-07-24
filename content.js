@@ -312,7 +312,16 @@
 
   function renderHistory(historyEl, resp, currentIsoDate) {
     if (!historyEl) return;
-    if (!resp || !resp.ok || !resp.count) {
+    if (!resp || !resp.ok) {
+      if (resp && resp.reason === "signin") {
+        historyEl.innerHTML =
+          '<div class="cwa-history-error">Sign in to <a href="https://www.xwordinfo.com/Finder" target="_blank" rel="noopener">xwordinfo.com</a> in this browser to see word history.</div>';
+      } else {
+        historyEl.innerHTML = "";
+      }
+      return;
+    }
+    if (!resp.count) {
       historyEl.innerHTML = "";
       return;
     }

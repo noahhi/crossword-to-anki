@@ -64,7 +64,7 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg && msg.type === "FETCH_WORD_HISTORY") {
     fetchWordHistory(msg.word)
       .then(sendResponse)
-      .catch(() => sendResponse({ ok: false }));
+      .catch(() => sendResponse({ ok: false, reason: "error" }));
     return true;
   }
 
@@ -160,14 +160,22 @@ async function fetchWordHistory(word) {
       credentials: "include",
     });
     console.log("[CWA] GET status:", getResp.status);
-    if (!getResp.ok) return { ok: false };
+    if (!getResp.ok) return { ok: false, reason: "error" };
     const getHtml = await getResp.text();
+
+    // When signed out, xwordinfo.com serves a login form instead of the
+    // Finder search form (no WordBox input), even though the page still
+    // has ASP.NET __VIEWSTATE fields for the login postback.
+    if (!/name="ctl00\$CPHContent\$WordBox"/.test(getHtml)) {
+      console.log("[CWA] not signed in to xwordinfo.com");
+      return { ok: false, reason: "signin" };
+    }
 
     const viewState = extractInputValue(getHtml, "__VIEWSTATE");
     const viewStateGen = extractInputValue(getHtml, "__VIEWSTATEGENERATOR");
     const eventValidation = extractInputValue(getHtml, "__EVENTVALIDATION");
     console.log("[CWA] viewState found:", !!viewState);
-    if (!viewState) return { ok: false };
+    if (!viewState) return { ok: false, reason: "error" };
 
     const body = new URLSearchParams({
       __EVENTTARGET: "",
@@ -190,12 +198,12 @@ async function fetchWordHistory(word) {
       body: body.toString(),
     });
     console.log("[CWA] POST status:", postResp.status);
-    if (!postResp.ok) return { ok: false };
+    if (!postResp.ok) return { ok: false, reason: "error" };
 
     return parseFinderHtml(await postResp.text());
   } catch (err) {
     console.log("[CWA] fetchWordHistory error:", err);
-    return { ok: false };
+    return { ok: false, reason: "error" };
   }
 }
 

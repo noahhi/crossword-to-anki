@@ -83,6 +83,15 @@
   font-style: italic;
 }
 
+#cwa-overlay .cwa-history-error {
+  color: #a15c00;
+}
+
+#cwa-overlay .cwa-history-error a {
+  color: inherit;
+  text-decoration: underline;
+}
+
 #cwa-overlay .cwa-history-count {
   font-weight: 500;
   color: #444;
