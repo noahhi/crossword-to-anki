@@ -42,8 +42,8 @@
   "commands": {
     "capture-clue": {
       "suggested_key": {
-        "default": "Ctrl+Shift+A",
-        "mac": "Command+Shift+A"
+        "default": "Ctrl+Shift+K",
+        "mac": "Command+Shift+K"
       },
       "description": "Capture the active crossword clue and answer"
     }

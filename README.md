@@ -6,7 +6,7 @@ A Chrome extension that captures clue/answer pairs from NYT crossword puzzles an
 
 ## How it works
 
-While you're solving on `nytimes.com/crosswords` or `nytimes.com/games`, hit `Ctrl+Shift+A` (or `Cmd+Shift+A` on Mac). A small overlay pops up pre-filled with the active clue and the letters in the answer. Tweak anything if you need to, click **Save to Anki**, and the card lands in the deck and note type you picked at setup.
+While you're solving on `nytimes.com/crosswords` or `nytimes.com/games`, hit `Ctrl+Shift+K` (or `Cmd+Shift+K` on Mac). A small overlay pops up pre-filled with the active clue and the letters in the answer. Tweak anything if you need to, click **Save to Anki**, and the card lands in the deck and note type you picked at setup.
 
 If you've already saved a card with the same answer (e.g., you've seen `OREO` clued differently before), the new clue is appended to the existing card instead of creating a duplicate. So your `OREO` card grows over time into a list of every way the NYT has clued it.
 
@@ -57,7 +57,7 @@ The extension's options page shows the exact `chrome-extension://...` line you s
 4. Pick the note type and map at minimum the **Clue** and **Answer** fields. The extension will guess sensibly (e.g., `Front`/`Back` or `Clue`/`Answer`); change them if needed.
 5. Optionally add extra tags. Save.
 
-You're done. Open a NYT crossword, hit `Ctrl/Cmd+Shift+A` on a clue, and try it.
+You're done. Open a NYT crossword, hit `Ctrl/Cmd+Shift+K` on a clue, and try it.
 
 ## Files
 
