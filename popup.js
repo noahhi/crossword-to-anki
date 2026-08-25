@@ -2,20 +2,28 @@ const ctx = document.getElementById("ctx");
 const captureBtn = document.getElementById("capture");
 const settingsBtn = document.getElementById("settings");
 
+// Keep in sync with CROSSWORD_URL_PATTERNS in background.js. Vox serves its
+// puzzle from an amuselabs.com iframe, so both the article URL and a directly
+// opened player URL count as a crossword page.
+const SITES = [
+  [/^https:\/\/www\.nytimes\.com\/(crosswords|games)\//, "NYT crossword"],
+  [/^https:\/\/www\.newyorker\.com\/puzzles-and-games-dept\/crossword/, "New Yorker crossword"],
+  [/^https:\/\/www\.vox\.com\/[^?#]*crossword/, "Vox crossword"],
+  [/^https:\/\/[\w-]+\.amuselabs\.com\//, "PuzzleMe crossword"],
+];
+
 (async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const url = (tab && tab.url) || "";
-  const onNyt = /^https:\/\/www\.nytimes\.com\/(crosswords|games)\//.test(url);
-  const onNewYorker = /^https:\/\/www\.newyorker\.com\/puzzles-and-games-dept\/crossword/.test(url);
-  const onCrossword = onNyt || onNewYorker;
+  const match = SITES.find(([re]) => re.test(url));
 
-  if (!onCrossword) {
-    ctx.textContent = "Open an NYT or New Yorker crossword page to capture clues.";
+  if (!match) {
+    ctx.textContent = "Open an NYT, New Yorker or Vox crossword page to capture clues.";
     captureBtn.disabled = true;
     return;
   }
 
-  ctx.textContent = onNewYorker ? "Ready on New Yorker crossword." : "Ready on NYT crossword.";
+  ctx.textContent = `Ready on ${match[1]}.`;
   captureBtn.disabled = false;
   captureBtn.addEventListener("click", async () => {
     try {

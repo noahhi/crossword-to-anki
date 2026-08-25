@@ -192,3 +192,16 @@
   border-color: #c53030;
   background: white;
 }
+
+/* Fallback only. The overlay normally renders in the top frame (see the
+   handoff in content.js), because a fixed overlay inside the puzzle iframe is
+   positioned against the frame, not the window — with the grid scrolled into
+   view the frame's top is well above the viewport and the card gets clipped.
+   If the host page isn't running the content script we render in place anyway,
+   so hug the corner and scroll internally to salvage what we can. */
+#cwa-overlay.cwa-overlay--embedded {
+  top: 8px;
+  right: 8px;
+  max-height: calc(100vh - 16px);
+  overflow-y: auto;
+}

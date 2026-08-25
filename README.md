@@ -1,16 +1,16 @@
 # Crossword to Anki
 
-A Chrome extension that captures clue/answer pairs from NYT crossword puzzles and adds them as cards to your Anki deck via AnkiConnect.
+A Chrome extension that captures clue/answer pairs from NYT, New Yorker and Vox crossword puzzles and adds them as cards to your Anki deck via AnkiConnect.
 
 <img width="200" alt="image" src="https://github.com/user-attachments/assets/7b851da1-ab26-44fe-80e3-6595f3e5fce3" />
 
 ## How it works
 
-While you're solving on `nytimes.com/crosswords` or `nytimes.com/games`, hit `Ctrl+Shift+K` (or `Cmd+Shift+K` on Mac). A small overlay pops up pre-filled with the active clue and the letters in the answer. Tweak anything if you need to, click **Save to Anki**, and the card lands in the deck and note type you picked at setup.
+While you're solving on `nytimes.com/crosswords`, `nytimes.com/games`, a New Yorker crossword, or the [Vox crossword](https://www.vox.com/crossword-puzzles), hit `Ctrl+Shift+K` (or `Cmd+Shift+K` on Mac). A small overlay pops up pre-filled with the active clue and the letters in the answer. Tweak anything if you need to, click **Save to Anki**, and the card lands in the deck and note type you picked at setup.
 
 If you've already saved a card with the same answer (e.g., you've seen `OREO` clued differently before), the new clue is appended to the existing card instead of creating a duplicate. So your `OREO` card grows over time into a list of every way the NYT has clued it.
 
-Each card is auto-tagged with `crossword`, `nyt`, and the puzzle's day-of-week (e.g. `nyt-saturday`), which is useful because difficulty varies wildly by day.
+Each card is auto-tagged with `crossword`, the source (`nyt`, `newyorker` or `vox`), and the puzzle's day-of-week (e.g. `nyt-saturday`, `vox-tuesday`), which is useful because difficulty varies wildly by day.
 
 The overlay also shows how many times the answer has appeared in NYT crosswords and a list of recent clues, sourced from [XWordInfo](https://xwordinfo.com). XWordInfo will only serve a handful of lookups to anonymous visitors — for reliable history you'll need a logged-in account on their site (the extension sends your browser's session cookie automatically once you're logged in).
 
@@ -57,14 +57,14 @@ The extension's options page shows the exact `chrome-extension://...` line you s
 4. Pick the note type and map at minimum the **Clue** and **Answer** fields. The extension will guess sensibly (e.g., `Front`/`Back` or `Clue`/`Answer`); change them if needed.
 5. Optionally add extra tags. Save.
 
-You're done. Open a NYT crossword, hit `Ctrl/Cmd+Shift+K` on a clue, and try it.
+You're done. Open a supported crossword, hit `Ctrl/Cmd+Shift+K` on a clue, and try it.
 
 ## Files
 
 - `manifest.json` — extension manifest (MV3)
 - `background.js` — service worker; handles hotkey + save messages, talks to Anki
 - `anki.js` — AnkiConnect client (shared between background and options)
-- `content.js` / `content.css` — runs on NYT pages; reads the puzzle DOM, shows the capture overlay
+- `content.js` / `content.css` — runs on NYT, New Yorker and PuzzleMe pages; reads the puzzle DOM, shows the capture overlay
 - `popup.html` / `popup.js` / `popup.css` — toolbar popup
 - `options.html` / `options.js` / `options.css` — first-run setup and reconfiguration
 - `icons/` — toolbar icons
@@ -75,12 +75,15 @@ You're done. Open a NYT crossword, hit `Ctrl/Cmd+Shift+K` on a clue, and try it.
 
 **The overlay shows the right clue but no answer** — The active answer is read by collecting letters from highlighted cells in the SVG grid. If the cells aren't filled in yet, you'll get an empty string. Either fill in the entry first, or just type the answer into the overlay manually.
 
+**Nothing happens on the Vox puzzle page** — The puzzle loads in an iframe, so capture only works once you've picked a date from the archive list and the grid is on screen. If you just reloaded the extension, reload the Vox tab too so the content script is re-injected into the frame and the host page.
+
 **Hotkey doesn't trigger** — Chrome may have assigned the same combo to another extension. Visit `chrome://extensions/shortcuts` to reassign.
 
 **The clue or answer fields are wrong on a Variety / Mini puzzle** — Layout differs across puzzle types. The selectors in `content.js` target the standard daily crossword. Open an issue (or edit `content.js` directly) if you want Mini support.
 
 ## Notes for hacking on this
 
-- NYT sometimes adjusts class names. The selectors in `content.js` use `[class*="..."]` substring matching to be resilient, but if a future redesign breaks capture, that's the file to look at first.
+- NYT sometimes adjusts class names. The selectors in `content.js` use `[class*="..."]` substring matching to be resilient, but if a future redesign breaks capture, that's the file to look at first. PuzzleMe's class names are stable, so its scraper matches them exactly.
+- Vox serves its puzzle from a PuzzleMe (Amuse Labs) iframe on `cdn3.amuselabs.com`, so the content script is injected with `all_frames: true`. The frame scrapes the clue and hands it to the top-level page over `postMessage`, which renders the overlay — a fixed overlay inside the iframe is positioned against the frame rather than the window, so it gets clipped once the grid is scrolled into view. Other PuzzleMe publishers are picked up by the same code path.
 - All AnkiConnect calls go through `anki.js`. Add new actions there.
 - The dedupe-by-answer / append-clue behavior lives in `handleSaveCard` in `background.js`. If you'd rather have strict deduplication or always-create-new behavior, that's the spot.

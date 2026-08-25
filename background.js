@@ -16,18 +16,24 @@ import {
 
 // ---- hotkey -> content script ----------------------------------------------
 
+// Pages that carry a supported puzzle. Vox and PuzzleMe are listed separately
+// because Vox hosts the player in an amuselabs.com iframe: the hotkey fires on
+// the vox.com tab, while the content script lives in the frame. (A user may
+// also open the player URL directly, hence the amuselabs entry.)
+const CROSSWORD_URL_PATTERNS = [
+  /^https:\/\/www\.nytimes\.com\/(crosswords|games)\//,
+  /^https:\/\/www\.newyorker\.com\/puzzles-and-games-dept\/crossword/,
+  /^https:\/\/www\.vox\.com\/[^?#]*crossword/,
+  /^https:\/\/[\w-]+\.amuselabs\.com\//,
+];
+
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== "capture-clue") return;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.id) return;
 
-  if (
-    !/^https:\/\/www\.nytimes\.com\/(crosswords|games)\//.test(tab.url || "") &&
-    !/^https:\/\/www\.newyorker\.com\/puzzles-and-games-dept\/crossword/.test(tab.url || "")
-  ) {
-    return;
-  }
+  if (!CROSSWORD_URL_PATTERNS.some((re) => re.test(tab.url || ""))) return;
 
   try {
     await chrome.tabs.sendMessage(tab.id, { type: "CAPTURE_CLUE" });
@@ -299,6 +305,13 @@ async function getSettings() {
   return s;
 }
 
+const SOURCE_LABELS = {
+  nyt: "NYT",
+  newyorker: "New Yorker",
+  vox: "Vox",
+  puzzleme: "PuzzleMe",
+};
+
 function buildTags(payload, extraTags) {
   const source = payload.source || "nyt";
   const tags = ["crossword", source];
@@ -345,7 +358,7 @@ async function handleSaveCard(payload) {
     fields[settings.notesField] = payload.notes;
   }
   if (settings.sourceField) {
-    fields[settings.sourceField] = payload.source === "newyorker" ? "New Yorker" : "NYT";
+    fields[settings.sourceField] = SOURCE_LABELS[payload.source] || SOURCE_LABELS.nyt;
   }
   if (settings.dateField && payload.date) {
     fields[settings.dateField] = payload.date.iso;
