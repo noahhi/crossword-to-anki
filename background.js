@@ -25,6 +25,7 @@ const CROSSWORD_URL_PATTERNS = [
   /^https:\/\/www\.newyorker\.com\/puzzles-and-games-dept\/crossword/,
   /^https:\/\/www\.vox\.com\/[^?#]*crossword/,
   /^https:\/\/[\w-]+\.amuselabs\.com\//,
+  /^https:\/\/(www\.)?brendanemmettquigley\.com\/solve\//,
 ];
 
 chrome.commands.onCommand.addListener(async (command) => {
@@ -310,6 +311,7 @@ const SOURCE_LABELS = {
   newyorker: "New Yorker",
   vox: "Vox",
   puzzleme: "PuzzleMe",
+  beq: "BEQ",
 };
 
 function buildTags(payload, extraTags) {

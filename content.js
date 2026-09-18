@@ -1,4 +1,5 @@
-// Content script injected into NYT, New Yorker and PuzzleMe (Vox) crossword pages.
+// Content script injected into NYT, New Yorker, PuzzleMe (Vox) and BEQ
+// (Crossword Nexus) crossword pages.
 //
 // Two responsibilities:
 //   1) Read the currently-active clue and the letters of its answer from the DOM.
@@ -8,7 +9,8 @@
 // NYT renders the crossword as SVG with <text> nodes for letters. The New
 // Yorker uses a similar player. We use class-name heuristics with fallbacks
 // because either site may tweak markup. PuzzleMe (Amuse Labs) is a plain-DOM
-// player with stable class names, so it gets its own exact-match scraper.
+// player with stable class names, so it gets its own exact-match scraper, as
+// does the Crossword Nexus solver that BEQ's site runs.
 
 (function () {
   // -------- Source detection ------------------------------------------------
@@ -20,6 +22,7 @@
     }
     if (host.includes("newyorker.com")) return "newyorker";
     if (host.includes("nytimes.com")) return "nyt";
+    if (host.endsWith("brendanemmettquigley.com")) return "beq";
     // A page that only hosts an embedded player (vox.com) has no puzzle of its
     // own — it just renders the overlay on the frame's behalf.
     return null;
@@ -105,6 +108,95 @@
     const id = new URLSearchParams(window.location.search).get("id") || "";
     const m = id.match(/(\d{4})(\d{2})(\d{2})/);
     return m ? buildDate(m[1], m[2], m[3]) : null;
+  }
+
+  // -------- Crossword Nexus (BEQ) scraping ----------------------------------
+  //
+  // brendanemmettquigley.com/solve/ runs the Crossword Nexus solver, which
+  // draws the grid as SVG with stable, unobfuscated class names:
+  //   rect.cw-cell[data-x][data-y]  one per cell, in grid coordinates
+  //   rect.cw-cell.selected         the cursor cell
+  //   stroke="var(--grid-selected-stroke-color)"
+  //                                 every cell of the selected word (selection
+  //                                 is painted via attributes, not classes; the
+  //                                 fill is a theme colour so the stroke is the
+  //                                 stable marker)
+  //   text.cw-cell-letter           a typed letter, positioned by SVG x/y
+  //                                 inside its cell's rect
+  //   .cw-top-text .cw-clue-text    the selected clue's text
+  //   .cw-clue.active               the same clue in the list, inside a
+  //                                 .cw-clues group whose title is Across/Down
+
+  const NEXUS_SELECTED_STROKE = "var(--grid-selected-stroke-color)";
+
+  function svgNum(el, attr) {
+    return parseFloat(el.getAttribute(attr));
+  }
+
+  function getCrosswordNexusCapture() {
+    const cursor = document.querySelector("rect.cw-cell.selected");
+    if (!cursor) return null;
+    const cx = parseInt(cursor.dataset.x, 10);
+    const cy = parseInt(cursor.dataset.y, 10);
+
+    const highlighted = Array.from(document.querySelectorAll("rect.cw-cell")).filter(
+      (rect) => rect.getAttribute("stroke") === NEXUS_SELECTED_STROKE
+    );
+
+    // A selected word is a straight run, so cells sharing a row means across.
+    // Only a one-cell run is ambiguous; then use the clue list's Across/Down
+    // heading instead.
+    const activeClue = document.querySelector(".cw-clue.active");
+    let direction;
+    if (highlighted.length > 1) {
+      const rows = new Set(highlighted.map((r) => r.dataset.y));
+      direction = rows.size === 1 ? "across" : "down";
+    } else {
+      const groupTitle = activeClue?.closest(".cw-clues")?.querySelector(".cw-clues-title");
+      const title = (groupTitle?.textContent || "").toLowerCase();
+      direction = title.includes("down") ? "down" : "across";
+    }
+
+    // Keep only the run through the cursor, dropping any cross-referenced
+    // cells the solver also highlights, then order them along the word.
+    const cells = highlighted
+      .filter((r) =>
+        direction === "across"
+          ? parseInt(r.dataset.y, 10) === cy
+          : parseInt(r.dataset.x, 10) === cx
+      )
+      .sort((a, b) =>
+        direction === "across"
+          ? parseInt(a.dataset.x, 10) - parseInt(b.dataset.x, 10)
+          : parseInt(a.dataset.y, 10) - parseInt(b.dataset.y, 10)
+      );
+    if (!cells.length) return null;
+
+    // Letters are separate <text> nodes, so match each one to the cell whose
+    // rect contains its anchor point.
+    const letters = Array.from(document.querySelectorAll("text.cw-cell-letter"));
+    const answer = cells
+      .map((rect) => {
+        const x0 = svgNum(rect, "x");
+        const y0 = svgNum(rect, "y");
+        const x1 = x0 + svgNum(rect, "width");
+        const y1 = y0 + svgNum(rect, "height");
+        const letter = letters.find((t) => {
+          const lx = svgNum(t, "x");
+          const ly = svgNum(t, "y");
+          return lx >= x0 && lx < x1 && ly >= y0 && ly < y1;
+        });
+        return letter ? letter.textContent.trim() : "";
+      })
+      .join("")
+      .toUpperCase();
+
+    const clueEl =
+      document.querySelector(".cw-top-text .cw-clue-text") ||
+      activeClue?.querySelector(".cw-clue-text");
+    const clue = clueEl ? clueEl.textContent.replace(/\s+/g, " ").trim() : null;
+
+    return { clue, answer, answerLength: cells.length, direction };
   }
 
   // -------- DOM scraping ----------------------------------------------------
@@ -257,6 +349,19 @@
       };
     }
 
+    if (source === "beq") {
+      // BEQ's .puz files carry a title and a puzzle number but no date.
+      return {
+        clue: null,
+        answer: null,
+        answerLength: null,
+        direction: null,
+        ...getCrosswordNexusCapture(),
+        date: null,
+        source,
+      };
+    }
+
     const date = getPuzzleDate();
     if (source === "newyorker") {
       const puzzmo = getPuzzmoCapture();
@@ -355,11 +460,17 @@
     if (!answerEl.value) answerEl.focus();
     else overlay.querySelector(".cwa-save").focus();
 
-    // Esc to close, Cmd/Ctrl+Enter to save.
+    // Esc to close, Cmd/Ctrl+Enter to save. Keystrokes stop at the overlay:
+    // solvers such as Crossword Nexus listen for typing on document and would
+    // otherwise write the user's edits into the grid.
     overlay.addEventListener("keydown", (e) => {
+      e.stopPropagation();
       if (e.key === "Escape") closeOverlay();
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSave(captured);
     });
+    for (const type of ["keypress", "keyup"]) {
+      overlay.addEventListener(type, (e) => e.stopPropagation());
+    }
 
     // Drag the overlay from the header or within 16px of any card edge.
     const card = overlay.querySelector(".cwa-card");

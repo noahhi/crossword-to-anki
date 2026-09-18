@@ -1,16 +1,16 @@
 # Crossword to Anki
 
-A Chrome extension that captures clue/answer pairs from NYT, New Yorker and Vox crossword puzzles and adds them as cards to your Anki deck via AnkiConnect.
+A Chrome extension that captures clue/answer pairs from NYT, New Yorker, Vox and Brendan Emmett Quigley crossword puzzles and adds them as cards to your Anki deck via AnkiConnect.
 
 <img width="200" alt="image" src="https://github.com/user-attachments/assets/7b851da1-ab26-44fe-80e3-6595f3e5fce3" />
 
 ## How it works
 
-While you're solving on `nytimes.com/crosswords`, `nytimes.com/games`, a New Yorker crossword, or the [Vox crossword](https://www.vox.com/crossword-puzzles), hit `Ctrl+Shift+K` (or `Cmd+Shift+K` on Mac). A small overlay pops up pre-filled with the active clue and the letters in the answer. Tweak anything if you need to, click **Save to Anki**, and the card lands in the deck and note type you picked at setup.
+While you're solving on `nytimes.com/crosswords`, `nytimes.com/games`, a New Yorker crossword, the [Vox crossword](https://www.vox.com/crossword-puzzles), or a puzzle on [Brendan Emmett Quigley's site](https://brendanemmettquigley.com), hit `Ctrl+Shift+K` (or `Cmd+Shift+K` on Mac). A small overlay pops up pre-filled with the active clue and the letters in the answer. Tweak anything if you need to, click **Save to Anki**, and the card lands in the deck and note type you picked at setup.
 
 If you've already saved a card with the same answer (e.g., you've seen `OREO` clued differently before), the new clue is appended to the existing card instead of creating a duplicate. So your `OREO` card grows over time into a list of every way the NYT has clued it.
 
-Each card is auto-tagged with `crossword`, the source (`nyt`, `newyorker` or `vox`), and the puzzle's day-of-week (e.g. `nyt-saturday`, `vox-tuesday`), which is useful because difficulty varies wildly by day.
+Each card is auto-tagged with `crossword`, the source (`nyt`, `newyorker`, `vox` or `beq`), and the puzzle's day-of-week (e.g. `nyt-saturday`, `vox-tuesday`), which is useful because difficulty varies wildly by day. (BEQ puzzles aren't dated, so they only get the first two.)
 
 The overlay also shows how many times the answer has appeared in NYT crosswords and a list of recent clues, sourced from [XWordInfo](https://xwordinfo.com). XWordInfo will only serve a handful of lookups to anonymous visitors — for reliable history you'll need a logged-in account on their site (the extension sends your browser's session cookie automatically once you're logged in).
 

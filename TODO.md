@@ -16,6 +16,7 @@
 ## Features
 - [ ] Support more crossword sites and widgets (Wash post, latimes, etc...)
       Vox / PuzzleMe is done — other PuzzleMe publishers (The Atlantic, NY Mag, Daily Beast) already work via the same code path but are untested.
+      BEQ is done via the Crossword Nexus solver; other sites running that solver (crosswordnexus.com itself, some indie constructors) would only need manifest/URL-pattern entries.
 - [ ] Show a preview of the Anki card before saving
 - [ ] Option to open the saved card in AnkiWeb after saving
 - [ ] Firefox support (MV3 is mostly compatible, would need minor manifest tweaks)

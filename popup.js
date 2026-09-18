@@ -10,6 +10,7 @@ const SITES = [
   [/^https:\/\/www\.newyorker\.com\/puzzles-and-games-dept\/crossword/, "New Yorker crossword"],
   [/^https:\/\/www\.vox\.com\/[^?#]*crossword/, "Vox crossword"],
   [/^https:\/\/[\w-]+\.amuselabs\.com\//, "PuzzleMe crossword"],
+  [/^https:\/\/(www\.)?brendanemmettquigley\.com\/solve\//, "BEQ crossword"],
 ];
 
 (async () => {
@@ -18,7 +19,7 @@ const SITES = [
   const match = SITES.find(([re]) => re.test(url));
 
   if (!match) {
-    ctx.textContent = "Open an NYT, New Yorker or Vox crossword page to capture clues.";
+    ctx.textContent = "Open an NYT, New Yorker, Vox or BEQ crossword page to capture clues.";
     captureBtn.disabled = true;
     return;
   }
